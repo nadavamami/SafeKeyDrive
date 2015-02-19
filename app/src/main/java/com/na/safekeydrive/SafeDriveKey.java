@@ -16,11 +16,17 @@
 
 package com.na.safekeydrive;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.inputmethodservice.InputMethodService;
 import android.inputmethodservice.Keyboard;
 import android.inputmethodservice.KeyboardView;
+import android.os.Bundle;
 import android.text.InputType;
 import android.text.method.MetaKeyKeyListener;
+import android.util.Log;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.View;
@@ -29,6 +35,8 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
+
+import com.google.android.gms.location.DetectedActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,12 +63,12 @@ public class SafeDriveKey extends InputMethodService
     static final boolean PROCESS_HARD_KEYS = true;
 
     private InputMethodManager mInputMethodManager;
-    private boolean isDriveMode = true;
+    private boolean isDriveMode = false;
     private LatinKeyboardView mDriveView;
     private LatinKeyboardView mInputView;
     private CandidateView mCandidateView;
     private CompletionInfo[] mCompletions;
-    
+
     private StringBuilder mComposing = new StringBuilder();
     private boolean mPredictionOn;
     private boolean mCompletionOn;
@@ -73,7 +81,7 @@ public class SafeDriveKey extends InputMethodService
     private LatinKeyboard mSymbolsShiftedKeyboard;
     private LatinKeyboard mQwertyKeyboard;
     private LatinKeyboard mEmptyKeyBoard;
-    
+    public static final String TAG = SafeDriveKey.class.getSimpleName();
     private LatinKeyboard mCurKeyboard;
     
     private String mWordSeparators;
@@ -86,6 +94,8 @@ public class SafeDriveKey extends InputMethodService
         super.onCreate();
         mInputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
         mWordSeparators = getResources().getString(R.string.word_separators);
+        IntentFilter intentFilter = new IntentFilter(ActivityRecognitionService.ACTION);
+        registerReceiver(mReceiver,intentFilter);
     }
     
     /**
@@ -114,6 +124,7 @@ public class SafeDriveKey extends InputMethodService
      * a configuration change.
      */
     @Override public View onCreateInputView() {
+
 //        mInputView = (LatinKeyboardView) getLayoutInflater().inflate(
 //                R.layout.input, null);
 //        mInputView.setOnKeyboardActionListener(this);
@@ -123,7 +134,14 @@ public class SafeDriveKey extends InputMethodService
         mInputView = (LatinKeyboardView) getLayoutInflater().inflate(
                 R.layout.input, null);
         mInputView.setOnKeyboardActionListener(this);
-        mInputView.setKeyboard(mEmptyKeyBoard);
+        if (isDriveMode){
+            mInputView.setKeyboard(mEmptyKeyBoard);
+        }
+        else
+        {
+            mInputView.setKeyboard(mQwertyKeyboard);
+        }
+
         return mInputView;
     }
 
@@ -267,19 +285,19 @@ public class SafeDriveKey extends InputMethodService
     @Override public void onStartInputView(EditorInfo attribute, boolean restarting) {
         super.onStartInputView(attribute, restarting);
         // Apply the selected keyboard to the input view.
-//        mInputView.setKeyboard(mCurKeyboard);
-//        mInputView.closing();
-//        final InputMethodSubtype subtype = mInputMethodManager.getCurrentInputMethodSubtype();
-//        mInputView.setSubtypeOnSpaceKey(subtype);
-        mInputView.setKeyboard(mEmptyKeyBoard);
+        mInputView.setKeyboard(mCurKeyboard);
         mInputView.closing();
         final InputMethodSubtype subtype = mInputMethodManager.getCurrentInputMethodSubtype();
+        mInputView.setSubtypeOnSpaceKey(subtype);
+//        mInputView.setKeyboard(mEmptyKeyBoard);
+//        mInputView.closing();
+//        final InputMethodSubtype subtype = mInputMethodManager.getCurrentInputMethodSubtype();
 //        mInputView.setSubtypeOnSpaceKey(subtype);
     }
 
     @Override
     public void onCurrentInputMethodSubtypeChanged(InputMethodSubtype subtype) {
-//        mInputView.setSubtypeOnSpaceKey(subtype);
+        mInputView.setSubtypeOnSpaceKey(subtype);
     }
 
     /**
@@ -589,7 +607,7 @@ public class SafeDriveKey extends InputMethodService
             setCandidatesViewShown(true);
         }
         if (mCandidateView != null) {
-            mCandidateView.setSuggestions(suggestions, completions, typedWordValid);
+//            mCandidateView.setSuggestions(suggestions, completions, typedWordValid);
         }
     }
     
@@ -715,4 +733,37 @@ public class SafeDriveKey extends InputMethodService
     
     public void onRelease(int primaryCode) {
     }
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver(){
+
+
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Bundle bundle = intent.getExtras();
+            int activityType = bundle.getInt(ActivityRecognitionService.ACTIVITY_TYPE, DetectedActivity.STILL);
+            String name = bundle.getString(ActivityRecognitionService.ACTIVITY_TYPE_NAME,"");
+            Log.i(TAG,"Detected activity: " + name);
+            isDriveMode = false;
+            if (activityType != DetectedActivity.STILL && activityType != DetectedActivity.UNKNOWN && activityType == DetectedActivity.TILTING){
+                isDriveMode = true;
+                mInputView.setKeyboard(mEmptyKeyBoard);
+            }
+            else
+            {
+                mInputView.setKeyboard(mQwertyKeyboard);
+            }
+
+        }
+    };
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mReceiver != null){
+            unregisterReceiver(mReceiver);
+        }
+    }
+
+
 }
