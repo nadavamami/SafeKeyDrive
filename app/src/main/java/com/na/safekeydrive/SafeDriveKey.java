@@ -24,6 +24,7 @@ import android.inputmethodservice.InputMethodService;
 import android.inputmethodservice.Keyboard;
 import android.inputmethodservice.KeyboardView;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.text.method.MetaKeyKeyListener;
 import android.util.Log;
@@ -61,6 +62,7 @@ public class SafeDriveKey extends InputMethodService
      * that are primarily intended to be used for on-screen text entry.
      */
     static final boolean PROCESS_HARD_KEYS = true;
+    private static final String CURRENT_LANGUAGE = "currentLanguage";
 
     private InputMethodManager mInputMethodManager;
     private boolean isDriveMode = false;
@@ -81,8 +83,14 @@ public class SafeDriveKey extends InputMethodService
     private LatinKeyboard mSymbolsShiftedKeyboard;
     private LatinKeyboard mQwertyKeyboard;
     private LatinKeyboard mEmptyKeyBoard;
+    private LatinKeyboard mHebrewKeyBoard;
     public static final String TAG = SafeDriveKey.class.getSimpleName();
     private LatinKeyboard mCurKeyboard;
+    private LatinKeyboard[] keyBoards;
+    private int currentLanguage;
+
+//    private String[] subTypes = getResources().getStringArray(R.array.supported_languages);
+
     
     private String mWordSeparators;
     
@@ -96,6 +104,8 @@ public class SafeDriveKey extends InputMethodService
         mWordSeparators = getResources().getString(R.string.word_separators);
         IntentFilter intentFilter = new IntentFilter(ActivityRecognitionService.ACTION);
         registerReceiver(mReceiver,intentFilter);
+        keyBoards = new LatinKeyboard[2];
+        currentLanguage = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getInt(CURRENT_LANGUAGE,0);
     }
     
     /**
@@ -115,6 +125,10 @@ public class SafeDriveKey extends InputMethodService
         mSymbolsKeyboard = new LatinKeyboard(this, R.xml.symbols);
         mSymbolsShiftedKeyboard = new LatinKeyboard(this, R.xml.symbols_shift);
         mEmptyKeyBoard = new LatinKeyboard(this, R.xml.empty_keyboard);
+        mHebrewKeyBoard = new LatinKeyboard(this, R.xml.heb_keybaord);
+        keyBoards[0] = mQwertyKeyboard;
+        keyBoards[1] = mHebrewKeyBoard;
+
     }
     
     /**
@@ -139,7 +153,7 @@ public class SafeDriveKey extends InputMethodService
         }
         else
         {
-            mInputView.setKeyboard(mQwertyKeyboard);
+            mInputView.setKeyboard(keyBoards[currentLanguage]);
         }
 
         return mInputView;
@@ -203,7 +217,7 @@ public class SafeDriveKey extends InputMethodService
                     // normal alphabetic keyboard, and assume that we should
                     // be doing predictive text (showing candidates as the
                     // user types).
-                    mCurKeyboard = mQwertyKeyboard;
+                    mCurKeyboard = keyBoards[currentLanguage];
                     mPredictionOn = true;
 
                     // We now look for a few special variations of text that will
@@ -243,7 +257,7 @@ public class SafeDriveKey extends InputMethodService
                 default:
                     // For all unknown input types, default to the alphabetic
                     // keyboard with no special features.
-                    mCurKeyboard = mQwertyKeyboard;
+                    mCurKeyboard = keyBoards[currentLanguage];
                     updateShiftKeyState(attribute);
             }
 
@@ -273,7 +287,7 @@ public class SafeDriveKey extends InputMethodService
         // its window.
         setCandidatesViewShown(false);
         
-        mCurKeyboard = mQwertyKeyboard;
+        mCurKeyboard = keyBoards[currentLanguage];
         if (mInputView != null) {
             mInputView.closing();
         }
@@ -297,7 +311,9 @@ public class SafeDriveKey extends InputMethodService
 
     @Override
     public void onCurrentInputMethodSubtypeChanged(InputMethodSubtype subtype) {
-        mInputView.setSubtypeOnSpaceKey(subtype);
+        if (mInputView != null){
+            mInputView.setSubtypeOnSpaceKey(subtype);
+        }
     }
 
     /**
@@ -552,12 +568,12 @@ public class SafeDriveKey extends InputMethodService
             handleClose();
             return;
         } else if (primaryCode == LatinKeyboardView.KEYCODE_OPTIONS) {
-            // Show a menu or somethin'
+            switchToNextKeyBoard();
         } else if (primaryCode == Keyboard.KEYCODE_MODE_CHANGE
                 && mInputView != null) {
             Keyboard current = mInputView.getKeyboard();
             if (current == mSymbolsKeyboard || current == mSymbolsShiftedKeyboard) {
-                current = mQwertyKeyboard;
+                current = keyBoards[currentLanguage];//mQwertyKeyboard;
             } else {
                 current = mSymbolsKeyboard;
             }
@@ -568,6 +584,20 @@ public class SafeDriveKey extends InputMethodService
         } else {
             handleCharacter(primaryCode, keyCodes);
         }
+    }
+
+    private void switchToNextKeyBoard() {
+        if (currentLanguage == (keyBoards.length - 1)){
+            currentLanguage = 0;
+        }
+        else
+        {
+            currentLanguage++;
+        }
+
+        mCurKeyboard = keyBoards[currentLanguage];
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit().putInt(CURRENT_LANGUAGE,currentLanguage).commit();
+        mInputView.setKeyboard(mCurKeyboard);
     }
 
     public void onText(CharSequence text) {
@@ -633,7 +663,7 @@ public class SafeDriveKey extends InputMethodService
         }
         
         Keyboard currentKeyboard = mInputView.getKeyboard();
-        if (mQwertyKeyboard == currentKeyboard) {
+        if (mQwertyKeyboard == currentKeyboard || mHebrewKeyBoard == currentKeyboard) {
             // Alphabet keyboard
             checkToggleCapsLock();
             mInputView.setShifted(mCapsLock || !mInputView.isShifted());
@@ -744,14 +774,18 @@ public class SafeDriveKey extends InputMethodService
             int activityType = bundle.getInt(ActivityRecognitionService.ACTIVITY_TYPE, DetectedActivity.STILL);
             String name = bundle.getString(ActivityRecognitionService.ACTIVITY_TYPE_NAME,"");
             Log.i(TAG,"Detected activity: " + name);
-            isDriveMode = false;
-            if (activityType != DetectedActivity.STILL && activityType != DetectedActivity.UNKNOWN && activityType == DetectedActivity.TILTING){
+//            Toast.makeText( getApplicationContext(),"activity - " + name,Toast.LENGTH_SHORT).show();
+//            isDriveMode = false;
+            if (activityType != DetectedActivity.STILL && activityType != DetectedActivity.UNKNOWN && activityType != DetectedActivity.TILTING){
                 isDriveMode = true;
                 mInputView.setKeyboard(mEmptyKeyBoard);
             }
-            else
+            else if (isDriveMode)
             {
-                mInputView.setKeyboard(mQwertyKeyboard);
+                if (mInputView !=null){
+                    mInputView.setKeyboard(mCurKeyboard);
+                }
+                isDriveMode = false;
             }
 
         }

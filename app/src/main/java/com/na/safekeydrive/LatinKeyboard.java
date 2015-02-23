@@ -78,6 +78,11 @@ public class LatinKeyboard extends Keyboard {
                 mEnterKey.icon = null;
                 mEnterKey.label = res.getText(R.string.label_send_key);
                 break;
+            case EditorInfo.IME_ACTION_DONE:
+                mEnterKey.iconPreview = null;
+                mEnterKey.icon = null;
+                mEnterKey.label = res.getText(R.string.lable_done);
+                break;
             default:
                 mEnterKey.icon = res.getDrawable(R.drawable.sym_keyboard_return);
                 mEnterKey.label = null;

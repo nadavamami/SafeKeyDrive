@@ -24,4 +24,6 @@
         android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:keyBackground="@drawable/key_bg"
+        android:background="@android:color/white"
         />

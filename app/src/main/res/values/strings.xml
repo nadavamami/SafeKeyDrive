@@ -32,6 +32,7 @@
     <!-- Labels for subtype -->
     <string name="label_subtype_generic">%s</string>
     <string name="label_subtype_en_GB">English (GB)</string>
+    <string name="label_subtype_heb_IL">Hebrew</string>
 
     <!-- Titles for ImePreference -->
     <string name="settings_name">Sample Soft Keyboard Settings</string>
@@ -40,4 +41,11 @@
     <string name="general_category">General</string>
     <string name="app_name">SafeKey Drive</string>
     <string name="safeDriveKeyLabel">Safe Drive Key</string>
+    <string name="lable_done">Done</string>
+
+    <string-array name="supported_languages" >
+        <item name="1">en_US</item>
+        <item name="2">en_GB</item>
+        <item name="3">iw</item>
+    </string-array>
 </resources>

@@ -26,6 +26,9 @@ import com.na.safekeydrive.common.InputMethodSettingsFragment;
  * Displays the IME preferences inside the input method setting.
  */
 public class ImePreferences extends PreferenceActivity {
+    public static final String LANGUAGE_HEBREW = "iw";
+    public static final String LANGUAGE_EN_US = "en_US";
+    public static final String LANGUAGE_EN_GB = "en_GB";
     @Override
     public Intent getIntent() {
         final Intent modIntent = new Intent(super.getIntent());

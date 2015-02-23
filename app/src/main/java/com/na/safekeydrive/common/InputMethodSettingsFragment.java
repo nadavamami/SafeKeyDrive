@@ -34,6 +34,7 @@ import android.preference.PreferenceFragment;
 public abstract class InputMethodSettingsFragment extends PreferenceFragment
         implements InputMethodSettingsInterface {
     private final InputMethodSettingsImpl mSettings = new InputMethodSettingsImpl();
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

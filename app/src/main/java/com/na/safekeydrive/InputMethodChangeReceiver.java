@@ -18,11 +18,13 @@ import com.google.android.gms.location.ActivityRecognition;
 import java.util.List;
 
 public class InputMethodChangeReceiver extends BroadcastReceiver implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+    private static final String TAG = InputMethodChangeReceiver.class.getSimpleName();
+
     public InputMethodChangeReceiver() {
     }
 
-    private PendingIntent pIntent;
-    private GoogleApiClient mGoogleApiClient;
+    private static PendingIntent pIntent;
+    private static  GoogleApiClient mGoogleApiClient;
     private Context mContext;
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -45,6 +47,13 @@ public class InputMethodChangeReceiver extends BroadcastReceiver implements Goog
                                     if(resp == ConnectionResult.SUCCESS){
                                         buildGoogleApiClient(context);
                                     }
+                    }
+                    else
+                    {
+                        if (mGoogleApiClient != null){
+                            Log.i(TAG,"Stop activity recognition updates");
+                            ActivityRecognition.ActivityRecognitionApi.removeActivityUpdates(mGoogleApiClient,pIntent);
+                        }
                     }
                     break;
                 }

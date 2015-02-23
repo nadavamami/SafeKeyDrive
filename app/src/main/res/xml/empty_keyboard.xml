@@ -3,27 +3,27 @@
     android:keyWidth="10%p"
     android:horizontalGap="0px"
     android:verticalGap="0px"
-    android:keyHeight="@dimen/key_height">
+    android:keyHeight="200dip">
 
     <Row android:rowEdgeFlags="bottom" >
         <Key android:codes="0"
              android:keyLabel="Don't text and drive it's not safe!!!"
              android:keyWidth="100%p"/>
     </Row>
-    <Row android:rowEdgeFlags="bottom" >
-        <Key android:codes="0"
-            android:keyLabel="Don't text and drive it's not safe!!!"
-            android:keyWidth="100%p"/>
-    </Row>
-    <Row android:rowEdgeFlags="bottom" >
-        <Key android:codes="0"
-            android:keyLabel="Don't text and drive it's not safe!!!"
-            android:keyWidth="100%p"/>
-    </Row>
-    <Row android:rowEdgeFlags="bottom" >
-        <Key android:codes="0"
-            android:keyLabel="Don't text and drive it's not safe!!!"
-            android:keyWidth="100%p"/>
-    </Row>
+    <!--<Row android:rowEdgeFlags="bottom" >-->
+        <!--<Key android:codes="0"-->
+            <!--android:keyLabel="Don't text and drive it's not safe!!!"-->
+            <!--android:keyWidth="100%p"/>-->
+    <!--</Row>-->
+    <!--<Row android:rowEdgeFlags="bottom" >-->
+        <!--<Key android:codes="0"-->
+            <!--android:keyLabel="Don't text and drive it's not safe!!!"-->
+            <!--android:keyWidth="100%p"/>-->
+    <!--</Row>-->
+    <!--<Row android:rowEdgeFlags="bottom" >-->
+        <!--<Key android:codes="0"-->
+            <!--android:keyLabel="Don't text and drive it's not safe!!!"-->
+            <!--android:keyWidth="100%p"/>-->
+    <!--</Row>-->
 
 </Keyboard >
