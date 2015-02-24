@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.preference.PreferenceActivity;
 
 import com.na.safekeydrive.common.InputMethodSettingsFragment;
+import com.na.safekeydrive.floatbutton.FloatButtonService;
 
 /**
  * Displays the IME preferences inside the input method setting.
@@ -38,9 +39,14 @@ public class ImePreferences extends PreferenceActivity {
     }
 
     @Override
+    protected boolean isValidFragment(String fragmentName){
+        return true;
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        startService(new Intent(getApplicationContext(), FloatButtonService.class));//FIXME added for easier debug
         // We overwrite the title of the activity, as the default one is "Voice Search".
         setTitle(R.string.settings_name);
     }
