@@ -30,6 +30,7 @@ public class InputMethodChangeReceiver extends BroadcastReceiver implements Goog
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
         if (action.equals(Intent.ACTION_INPUT_METHOD_CHANGED)) {
+
             mContext = context;
             InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
             List<InputMethodInfo> mInputMethodProperties = imm.getEnabledInputMethodList();
@@ -53,6 +54,7 @@ public class InputMethodChangeReceiver extends BroadcastReceiver implements Goog
                         if (mGoogleApiClient != null){
                             Log.i(TAG,"Stop activity recognition updates");
                             ActivityRecognition.ActivityRecognitionApi.removeActivityUpdates(mGoogleApiClient,pIntent);
+                            mGoogleApiClient.disconnect();
                         }
                     }
                     break;
@@ -74,6 +76,7 @@ public class InputMethodChangeReceiver extends BroadcastReceiver implements Goog
     @Override
     public void onConnected(Bundle bundle) {
 
+//        Toast.makeText(mContext,"google client connected",Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(mContext, ActivityRecognitionService.class);
         pIntent = PendingIntent.getService(mContext, 0, intent,PendingIntent.FLAG_UPDATE_CURRENT);
         ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mGoogleApiClient,500,pIntent);
@@ -81,11 +84,15 @@ public class InputMethodChangeReceiver extends BroadcastReceiver implements Goog
 
     @Override
     public void onConnectionSuspended(int i) {
-
+//        Toast.makeText(mContext,"google connection suspended",Toast.LENGTH_SHORT).show();
+        Log.e(InputMethodChangeReceiver.class.getSimpleName(),"google client connection suspended reconnecting");
+        mGoogleApiClient.reconnect();
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
+//        Toast.makeText(mContext,"google client connection failed",Toast.LENGTH_SHORT).show();
         Log.e(InputMethodChangeReceiver.class.getSimpleName(),"google client connection failed with code " + connectionResult.getErrorCode());
+        mGoogleApiClient.connect();
     }
 }

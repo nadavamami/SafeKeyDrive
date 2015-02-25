@@ -24,6 +24,7 @@ import android.inputmethodservice.InputMethodService;
 import android.inputmethodservice.Keyboard;
 import android.inputmethodservice.KeyboardView;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.text.method.MetaKeyKeyListener;
@@ -88,6 +89,7 @@ public class SafeDriveKey extends InputMethodService
     private LatinKeyboard mCurKeyboard;
     private LatinKeyboard[] keyBoards;
     private int currentLanguage;
+    private Vibrator mVibrator;
 
 //    private String[] subTypes = getResources().getStringArray(R.array.supported_languages);
 
@@ -105,6 +107,7 @@ public class SafeDriveKey extends InputMethodService
         IntentFilter intentFilter = new IntentFilter(ActivityRecognitionService.ACTION);
         registerReceiver(mReceiver,intentFilter);
         keyBoards = new LatinKeyboard[2];
+        mVibrator = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
         currentLanguage = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getInt(CURRENT_LANGUAGE,0);
     }
     
@@ -166,7 +169,7 @@ public class SafeDriveKey extends InputMethodService
     @Override public View onCreateCandidatesView() {
         mCandidateView = new CandidateView(this);
         mCandidateView.setService(this);
-        return mCandidateView;
+        return null; //mCandidateView;
     }
 
     /**
@@ -553,6 +556,9 @@ public class SafeDriveKey extends InputMethodService
     // Implementation of KeyboardViewListener
 
     public void onKey(int primaryCode, int[] keyCodes) {
+        if (mVibrator.hasVibrator()){
+            mVibrator.vibrate(50);
+        }
         if (isWordSeparator(primaryCode)) {
             // Handle separator
             if (mComposing.length() > 0) {
@@ -632,9 +638,9 @@ public class SafeDriveKey extends InputMethodService
     public void setSuggestions(List<String> suggestions, boolean completions,
             boolean typedWordValid) {
         if (suggestions != null && suggestions.size() > 0) {
-            setCandidatesViewShown(true);
+            setCandidatesViewShown(false);
         } else if (isExtractViewShown()) {
-            setCandidatesViewShown(true);
+            setCandidatesViewShown(false);
         }
         if (mCandidateView != null) {
 //            mCandidateView.setSuggestions(suggestions, completions, typedWordValid);
@@ -773,22 +779,24 @@ public class SafeDriveKey extends InputMethodService
             Bundle bundle = intent.getExtras();
             int activityType = bundle.getInt(ActivityRecognitionService.ACTIVITY_TYPE, DetectedActivity.STILL);
             String name = bundle.getString(ActivityRecognitionService.ACTIVITY_TYPE_NAME,"");
+            int confidence = bundle.getInt(ActivityRecognitionService.ACTIVITY_CONFIDENCE);
             Log.i(TAG,"Detected activity: " + name);
-//            Toast.makeText( getApplicationContext(),"activity - " + name,Toast.LENGTH_SHORT).show();
+//            Toast.makeText(getApplicationContext(), "activity - " + name, Toast.LENGTH_SHORT).show();
 //            isDriveMode = false;
-            if (activityType != DetectedActivity.STILL && activityType != DetectedActivity.UNKNOWN && activityType != DetectedActivity.TILTING){
-                isDriveMode = true;
-                mInputView.setKeyboard(mEmptyKeyBoard);
-            }
-            else if (isDriveMode)
-            {
-                if (mInputView !=null){
-                    mInputView.setKeyboard(mCurKeyboard);
+//            if (confidence > 50){
+                if (activityType != DetectedActivity.STILL && activityType != DetectedActivity.UNKNOWN && activityType != DetectedActivity.TILTING){
+                    isDriveMode = true;
+                    mInputView.setKeyboard(mEmptyKeyBoard);
                 }
-                isDriveMode = false;
+                else if (isDriveMode)
+                {
+                    if (mInputView !=null){
+                        mInputView.setKeyboard(mCurKeyboard);
+                    }
+                    isDriveMode = false;
+                }
             }
-
-        }
+//        }
     };
 
     @Override

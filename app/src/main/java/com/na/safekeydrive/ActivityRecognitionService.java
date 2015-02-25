@@ -27,6 +27,7 @@ public class ActivityRecognitionService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         if(ActivityRecognitionResult.hasResult(intent)){
+//            Toast.makeText(getApplicationContext(),"activity detected",Toast.LENGTH_SHORT).show();
             ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
             Log.i(TAG, getType(result.getMostProbableActivity().getType()) + "t" + result.getMostProbableActivity().getConfidence());
             int type = result.getMostProbableActivity().getType();
@@ -34,6 +35,7 @@ public class ActivityRecognitionService extends IntentService {
             i.putExtra(ACTIVITY_TYPE, type);
             i.putExtra(ACTIVITY_CONFIDENCE, result.getMostProbableActivity().getConfidence());
             i.putExtra(ACTIVITY_TYPE_NAME,getType(type));
+
             sendBroadcast(i);
 
         }
