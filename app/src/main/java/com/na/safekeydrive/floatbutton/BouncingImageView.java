@@ -1,12 +1,20 @@
 package com.na.safekeydrive.floatbutton;
 
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
+import android.os.CountDownTimer;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.Toast;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by Arthur on 2/24/2015.
@@ -48,7 +56,7 @@ public class BouncingImageView extends ImageView {
     public final Runnable mRunnable = new Runnable() {
         private static final int DIRECTION_POSITIVE = 1;
         private static final int DIRECTION_NEGATIVE = -1;
-        private static final int ANIMATION_STEPS = 1;
+        private static final int ANIMATION_STEPS = 200;
         private int mHorizontalDirection = DIRECTION_POSITIVE;
         private int mVerticalDirection = DIRECTION_NEGATIVE;
         private boolean isClicked = false;
@@ -105,9 +113,46 @@ public class BouncingImageView extends ImageView {
 
                 params.x = (int) x;
                 params.y = (int) y;
+                final Runnable thatis = this;
 
-                getHandler().post(this);
+
+            /*{
+
+                public void onTick(long millisUntilFinished) {
+                    Toast.makeText(getContext(),String.valueOf(millisUntilFinished),Toast.LENGTH_SHORT).show();
+
+                }
+
+                public void onFinish() {
+                    Toast.makeText(getContext(),"TURNHIMOFFF",Toast.LENGTH_SHORT).show();
+                    *//*  Intent intent = new Intent();
+                    intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                    intent.setAction("com.na.safekeydrive.floatbutton.BouncingImageView");
+                    intent.putExtra("Status", "Clicked");        *//*
+                }
+            }.start();*/
+                getHandler().postDelayed(this, 2000);
                 windowManager.updateViewLayout(that, params);
+
+            boolean isReset = false;
+         /*   TimerTask task=new TimerTask(){
+                long elapsed = 0L;
+
+                @Override
+                public void run() {
+                    elapsed+=1000;
+                    if(elapsed>=5000){
+//                        this.cancel();
+                        //Toast.makeText(getContext(), "DUBI LO BUBAAAAA", Toast.LENGTH_SHORT);
+                        return;
+                    }
+                    //if(some other conditions)
+                    //   this.cancel();
+//                    displayText("seconds elapsed: " + elapsed / 1000);
+                }
+            };
+            Timer timer = new Timer();
+            timer.scheduleAtFixedRate(task, 1000, 1000);*/
 
             that.setOnTouchListener(new View.OnTouchListener() {
                 private int initialX;
@@ -118,17 +163,43 @@ public class BouncingImageView extends ImageView {
                 @Override public boolean onTouch(View v, MotionEvent event) {
                     switch (event.getAction()) {
                         case MotionEvent.ACTION_DOWN:
+                            Intent intent = new Intent();
+                            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                            intent.setAction("com.na.safekeydrive.floatbutton.BouncingImageView");
+                            intent.putExtra("Status", "Clicked");
+                            getContext().sendBroadcast(intent);
+                           // windowManager.removeView(that);
+                            //getHandler().postDelayed(thatis, 1000);
+                          //  windowManager.addView(that, params);
                             initialX = params.x;
                             initialY = params.y;
                             initialTouchX = event.getRawX();
                             initialTouchY = event.getRawY();
-                            getHandler().removeCallbacks(mRunnable);
+                            //getHandler().removeCallbacks(mRunnable);
+                            that.setVisibility(View.GONE);
+                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
+
+                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
+                     //       windowManager.updateViewLayout(that, params);
+                            MyCountDownTimer countDownTimer = MyCountDownTimer.get_mInstance();
+                            countDownTimer.cancel();
+
+                            countDownTimer.restart();
+                            SystemClock.sleep(3000);
+
+                            countDownTimer.start();
+
+                            that.setVisibility(View.VISIBLE);
+                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
+
+                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
+
                             windowManager.updateViewLayout(that, params);
                             return true;
                         case MotionEvent.ACTION_UP:
                             isClicked = false;
-                            getHandler().post(mRunnable);
-                            windowManager.updateViewLayout(that, params);
+                            //getHandler().post(mRunnable);
+                            //windowManager.updateViewLayout(that, params);
                             return true;
                         case MotionEvent.ACTION_MOVE:
                             isClicked = false;

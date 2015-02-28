@@ -53,6 +53,8 @@ public class FloatButtonService extends Service {
 
         chatHead.mRunnable.run();
         windowManager.addView(chatHead, params);
+        final MyCountDownTimer countDownTimer = MyCountDownTimer.get_mInstance().start();
+        countDownTimer.setContext(getApplicationContext());
 
 
     }
