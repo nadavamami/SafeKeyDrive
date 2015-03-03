@@ -2,10 +2,12 @@ package com.na.safekeydrive;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.location.Location;
 import android.util.Log;
 
 import com.google.android.gms.location.ActivityRecognitionResult;
 import com.google.android.gms.location.DetectedActivity;
+import com.google.android.gms.location.FusedLocationProviderApi;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -20,6 +22,7 @@ public class ActivityRecognitionService extends IntentService {
     public static final String ACTIVITY_TYPE_NAME = "activityTypeName";
     public static final String ACTIVITY_CONFIDENCE = "activityConfidence";
     public static final String ACTION = "com.na.safekeydrive.ACTIVITY_RECOGNITION_DATA";
+    public static final String LOCATION_ACTION = "com.na.safekeydrive.LOCATION_DATA";
     public ActivityRecognitionService() {
         super("My Activity Recognition Service");
     }
@@ -28,8 +31,16 @@ public class ActivityRecognitionService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         if(ActivityRecognitionResult.hasResult(intent)){
 //            Toast.makeText(getApplicationContext(),"activity detected",Toast.LENGTH_SHORT).show();
+            Location location = intent.getParcelableExtra(FusedLocationProviderApi.KEY_LOCATION_CHANGED);
+            if (intent.hasExtra(FusedLocationProviderApi.KEY_LOCATION_CHANGED)){
+                if (BuildConfig.DEBUG){
+                    Log.e(TAG,"location update " + location.getSpeed());
+                }
+            }
             ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
-            Log.i(TAG, getType(result.getMostProbableActivity().getType()) + "t" + result.getMostProbableActivity().getConfidence());
+            if (BuildConfig.DEBUG){
+                Log.i(TAG, getType(result.getMostProbableActivity().getType()) + "t" + result.getMostProbableActivity().getConfidence());
+            }
             int type = result.getMostProbableActivity().getType();
             Intent i = new Intent("com.na.safekeydrive.ACTIVITY_RECOGNITION_DATA");
             i.putExtra(ACTIVITY_TYPE, type);

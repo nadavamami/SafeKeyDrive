@@ -23,11 +23,11 @@
 <input-method xmlns:android="http://schemas.android.com/apk/res/android"
         android:settingsActivity="com.na.safekeydrive.ImePreferences"
 >
-    <subtype
-        android:label="@string/label_subtype_generic"
-        android:icon="@drawable/sym_keyboard_space"
-        android:imeSubtypeLocale="en_US"
-        android:imeSubtypeMode="keyboard" />
+    <!--<subtype-->
+        <!--android:label="@string/label_subtype_generic"-->
+        <!--android:icon="@drawable/sym_keyboard_space"-->
+        <!--android:imeSubtypeLocale="en_US"-->
+        <!--android:imeSubtypeMode="keyboard" />-->
     <!--<subtype-->
         <!--android:label="@string/label_subtype_en_GB"-->
         <!--android:icon="@drawable/icon_en_gb"-->

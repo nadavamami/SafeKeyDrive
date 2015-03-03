@@ -120,9 +120,15 @@ ADDED from AndroidManifest.xml:55:9
 service#com.na.safekeydrive.floatbutton.FloatButtonService
 ADDED from AndroidManifest.xml:59:9
 	android:enabled
-		ADDED from AndroidManifest.xml:60:13
-	android:name
 		ADDED from AndroidManifest.xml:61:13
+	android:name
+		ADDED from AndroidManifest.xml:60:13
+activity#com.na.safekeydrive.GooglePlayDialogShellActivity
+ADDED from AndroidManifest.xml:64:9
+	android:label
+		ADDED from AndroidManifest.xml:66:13
+	android:name
+		ADDED from AndroidManifest.xml:65:13
 uses-sdk
 INJECTED from AndroidManifest.xml:0:0 reason: use-sdk injection requested
 MERGED from com.google.android.gms:play-services-location:6.5.87:18:5

@@ -1,20 +1,15 @@
 package com.na.safekeydrive.floatbutton;
 
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.CountDownTimer;
-import android.os.SystemClock;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.Toast;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by Arthur on 2/24/2015.
@@ -27,6 +22,10 @@ public class BouncingImageView extends ImageView {
     private WindowManager.LayoutParams params;
     private WindowManager windowManager;
     private View that=this;
+    private boolean isClicked = false;
+    public static final String OVERRIDE = "com.na.safekeydrive.floatbutton.BouncingImageView";
+    public static final String EXTRA = "Status";
+
 
     public BouncingImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
@@ -78,8 +77,8 @@ public class BouncingImageView extends ImageView {
                       /***
                        * Randomize initial position
                        */
-                      x = (float) Math.random() * (parentWidth - width);
-                      y = (float) Math.random() * (parentHeight - height);
+                      x = 0;//(float) Math.random() * (parentWidth - width);
+                      y = 0;//(float) Math.random() * (parentHeight - height);
                       mHorizontalDirection = ((int) x % 2 == 0) ? DIRECTION_NEGATIVE : DIRECTION_POSITIVE;
                       mVerticalDirection = ((int) y % 2 == 0) ? DIRECTION_NEGATIVE : DIRECTION_POSITIVE;
                       mStarted = true;
@@ -131,7 +130,7 @@ public class BouncingImageView extends ImageView {
                     intent.putExtra("Status", "Clicked");        *//*
                 }
             }.start();*/
-                getHandler().postDelayed(this, 2000);
+//                getHandler().postDelayed(this, 2000);
                 windowManager.updateViewLayout(that, params);
 
             boolean isReset = false;
@@ -163,10 +162,11 @@ public class BouncingImageView extends ImageView {
                 @Override public boolean onTouch(View v, MotionEvent event) {
                     switch (event.getAction()) {
                         case MotionEvent.ACTION_DOWN:
+                            setClicked(true);
                             Intent intent = new Intent();
                             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                            intent.setAction("com.na.safekeydrive.floatbutton.BouncingImageView");
-                            intent.putExtra("Status", "Clicked");
+                            intent.setAction(OVERRIDE);
+                            intent.putExtra(EXTRA, true);
                             getContext().sendBroadcast(intent);
                            // windowManager.removeView(that);
                             //getHandler().postDelayed(thatis, 1000);
@@ -177,24 +177,47 @@ public class BouncingImageView extends ImageView {
                             initialTouchY = event.getRawY();
                             //getHandler().removeCallbacks(mRunnable);
                             that.setVisibility(View.GONE);
-                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
+                            invalidate();
+//                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
+//
+//                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
+//                            windowManager.updateViewLayout(that, params);
+//                            MyCountDownTimer countDownTimer = MyCountDownTimer.get_mInstance();
+//                            countDownTimer.cancel();
+                            new CountDownTimer(3000,1000) {
+                                @Override
+                                public void onTick(long millisUntilFinished) {
 
-                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
-                     //       windowManager.updateViewLayout(that, params);
-                            MyCountDownTimer countDownTimer = MyCountDownTimer.get_mInstance();
-                            countDownTimer.cancel();
+                                }
 
-                            countDownTimer.restart();
-                            SystemClock.sleep(3000);
-
-                            countDownTimer.start();
-
-                            that.setVisibility(View.VISIBLE);
-                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
-
-                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
-
-                            windowManager.updateViewLayout(that, params);
+                                @Override
+                                public void onFinish() {
+                                    that.setVisibility(VISIBLE);
+                                    setClicked(false);
+//                                    that.setVisibility(View.VISIBLE);
+//                                    ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
+//
+//                                    ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
+//
+//                                    windowManager.updateViewLayout(that, params);
+                                    invalidate();
+//                                    mTimer.cancel();
+//                                    mTimer.start();
+                                    startOverrideTimer();
+                                }
+                            }.start();
+//                            countDownTimer.restart();
+//                            SystemClock.sleep(3000);
+//
+//                            countDownTimer.start();
+//
+//                            that.setVisibility(View.VISIBLE);
+//                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
+//
+//                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
+//
+//                            windowManager.updateViewLayout(that, params);
+//                            invalidate();
                             return true;
                         case MotionEvent.ACTION_UP:
                             isClicked = false;
@@ -231,6 +254,38 @@ public class BouncingImageView extends ImageView {
 
     public void setWindowManager(WindowManager windowManager) {
         this.windowManager = windowManager;
+    }
+
+    private void startOverrideTimer(){
+        new CountDownTimer(2000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                if (getClicked()){
+                    cancel();
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                if (!getClicked()){
+                    Log.i("override timer","time is up");
+                    Intent intent = new Intent();
+                    intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                    intent.setAction(OVERRIDE);
+                    intent.putExtra(EXTRA, false);
+                    isClicked = false;
+                    getContext().sendBroadcast(intent);
+                }
+            }
+        }.start();
+    }
+
+    private synchronized void setClicked(boolean clicked){
+        isClicked = clicked;
+    }
+
+    private synchronized boolean getClicked(){
+        return isClicked;
     }
 }
 
