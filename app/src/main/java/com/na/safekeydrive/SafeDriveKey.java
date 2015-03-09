@@ -16,6 +16,7 @@
 
 package com.na.safekeydrive;
 
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -37,8 +38,17 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
+import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.ActivityRecognition;
 import com.google.android.gms.location.DetectedActivity;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.na.safekeydrive.floatbutton.BouncingImageView;
+import com.na.safekeydrive.floatbutton.FloatButtonService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,8 +61,15 @@ import java.util.List;
  * be fleshed out as appropriate.
  */
 public class SafeDriveKey extends InputMethodService
-        implements KeyboardView.OnKeyboardActionListener {
+        implements KeyboardView.OnKeyboardActionListener,GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     static final boolean DEBUG = true;
+
+    private static final long UPDATE_INTERVAL_MS = 500;
+    private static final long FASTEST_INTERVAL_MS = 250;
+    private static PendingIntent pIntent;
+    private static PendingIntent lIntent;
+    private static GoogleApiClient mGoogleApiClient;
+
     
     /**
      * This boolean indicates the optional example code for performing
@@ -67,6 +84,7 @@ public class SafeDriveKey extends InputMethodService
 
     private InputMethodManager mInputMethodManager;
     private boolean isDriveMode = false;
+    private boolean isOverride = false;
     private LatinKeyboardView mDriveView;
     private LatinKeyboardView mInputView;
     private CandidateView mCandidateView;
@@ -102,10 +120,14 @@ public class SafeDriveKey extends InputMethodService
      */
     @Override public void onCreate() {
         super.onCreate();
+        Log.e(TAG,"onCreate");
+        startActivityRecognition();
         mInputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
         mWordSeparators = getResources().getString(R.string.word_separators);
         IntentFilter intentFilter = new IntentFilter(ActivityRecognitionService.ACTION);
         registerReceiver(mReceiver,intentFilter);
+        IntentFilter overrideFilter = new IntentFilter(BouncingImageView.OVERRIDE);
+        registerReceiver(mOverrideReceiver,overrideFilter);
         keyBoards = new LatinKeyboard[2];
         mVibrator = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
         currentLanguage = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getInt(CURRENT_LANGUAGE,0);
@@ -116,6 +138,7 @@ public class SafeDriveKey extends InputMethodService
      * is called after creation and any configuration change.
      */
     @Override public void onInitializeInterface() {
+        Log.e(TAG,"onInitializeInterface");
         if (mQwertyKeyboard != null) {
             // Configuration changes can happen after the keyboard gets recreated,
             // so we need to be able to re-build the keyboards if the available
@@ -141,7 +164,7 @@ public class SafeDriveKey extends InputMethodService
      * a configuration change.
      */
     @Override public View onCreateInputView() {
-
+        Log.e(TAG,"onCreateInputView");
 //        mInputView = (LatinKeyboardView) getLayoutInflater().inflate(
 //                R.layout.input, null);
 //        mInputView.setOnKeyboardActionListener(this);
@@ -180,7 +203,8 @@ public class SafeDriveKey extends InputMethodService
      */
     @Override public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
-        
+        Log.e(TAG,"onStartInput");
+
         // Reset our state.  We want to do this even if restarting, because
         // the underlying state of the text editor could have changed in any way.
         mComposing.setLength(0);
@@ -270,6 +294,15 @@ public class SafeDriveKey extends InputMethodService
         mCurKeyboard.setImeOptions(getResources(), attribute.imeOptions);
     }
 
+    @Override
+    public void onFinishInputView(boolean finishingInput) {
+        super.onFinishInputView(finishingInput);
+        Log.e(TAG,"onFinishInputView");
+        if (isGoogleClientConnected()){
+            stopActivityRecognition();
+        }
+    }
+
     /**
      * This is called when the user is done editing a field.  We can use
      * this to reset our state.
@@ -301,11 +334,15 @@ public class SafeDriveKey extends InputMethodService
     
     @Override public void onStartInputView(EditorInfo attribute, boolean restarting) {
         super.onStartInputView(attribute, restarting);
+        Log.e(TAG,"onStartInputView");
+        if (!isGoogleClientConnected()){
+            startActivityRecognition();
+        }
         // Apply the selected keyboard to the input view.
         mInputView.setKeyboard(mCurKeyboard);
         mInputView.closing();
         final InputMethodSubtype subtype = mInputMethodManager.getCurrentInputMethodSubtype();
-        mInputView.setSubtypeOnSpaceKey(subtype);
+//        mInputView.setSubtypeOnSpaceKey(subtype);
 //        mInputView.setKeyboard(mEmptyKeyBoard);
 //        mInputView.closing();
 //        final InputMethodSubtype subtype = mInputMethodManager.getCurrentInputMethodSubtype();
@@ -314,7 +351,7 @@ public class SafeDriveKey extends InputMethodService
 
     @Override
     public void onCurrentInputMethodSubtypeChanged(InputMethodSubtype subtype) {
-        if (mInputView != null){
+        if (mInputView != null && subtype != null){
             mInputView.setSubtypeOnSpaceKey(subtype);
         }
     }
@@ -557,7 +594,7 @@ public class SafeDriveKey extends InputMethodService
 
     public void onKey(int primaryCode, int[] keyCodes) {
         if (mVibrator.hasVibrator()){
-            mVibrator.vibrate(50);
+            mVibrator.vibrate(20);
         }
         if (isWordSeparator(primaryCode)) {
             // Handle separator
@@ -696,8 +733,11 @@ public class SafeDriveKey extends InputMethodService
             updateShiftKeyState(getCurrentInputEditorInfo());
             updateCandidates();
         } else {
-            getCurrentInputConnection().commitText(
-                    String.valueOf((char) primaryCode), 1);
+//            getCurrentInputConnection().commitText(
+//                    String.valueOf((char) primaryCode), 1);
+            mComposing.append(String.valueOf((char) primaryCode));
+            getCurrentInputConnection().setComposingText(mComposing, 1);
+            updateShiftKeyState(getCurrentInputEditorInfo());
         }
     }
 
@@ -780,23 +820,73 @@ public class SafeDriveKey extends InputMethodService
             int activityType = bundle.getInt(ActivityRecognitionService.ACTIVITY_TYPE, DetectedActivity.STILL);
             String name = bundle.getString(ActivityRecognitionService.ACTIVITY_TYPE_NAME,"");
             int confidence = bundle.getInt(ActivityRecognitionService.ACTIVITY_CONFIDENCE);
-            Log.i(TAG,"Detected activity: " + name);
-//            Toast.makeText(getApplicationContext(), "activity - " + name, Toast.LENGTH_SHORT).show();
+            if (BuildConfig.DEBUG){
+                Log.i(TAG,"Detected activity: " + name);
+//                Toast.makeText(getApplicationContext(), "activity - " + name, Toast.LENGTH_SHORT).show();
+            }
 //            isDriveMode = false;
 //            if (confidence > 50){
-                if (activityType != DetectedActivity.STILL && activityType != DetectedActivity.UNKNOWN && activityType != DetectedActivity.TILTING){
-                    isDriveMode = true;
-                    mInputView.setKeyboard(mEmptyKeyBoard);
+                switch (activityType){
+                    case DetectedActivity.STILL:
+                    case DetectedActivity.UNKNOWN:
+                        if (isDriveMode){
+                            stopService(new Intent(getApplicationContext(),FloatButtonService.class));
+                            if (mInputView != null){
+                                mInputView.setKeyboard(keyBoards[currentLanguage]);
+                            }
+                            isDriveMode = false;
+                            isOverride = false;
+                        }
+                        break;
+                    case DetectedActivity.WALKING:
+                    case DetectedActivity.RUNNING:
+                    case DetectedActivity.ON_FOOT:
+                    case DetectedActivity.IN_VEHICLE:
+                    case DetectedActivity.ON_BICYCLE:
+//                    case DetectedActivity.TILTING:
+                        isDriveMode = true;
+                        if (!isOverride){
+                            mInputView.setKeyboard(mEmptyKeyBoard);
+                            startService(new Intent(getApplicationContext(), FloatButtonService.class));
+                        }
+                        else if (mInputView.getKeyboard() == mEmptyKeyBoard)
+                        {
+                            mInputView.setKeyboard(keyBoards[currentLanguage]);
+                        }
+                        break;
                 }
-                else if (isDriveMode)
-                {
-                    if (mInputView !=null){
-                        mInputView.setKeyboard(mCurKeyboard);
-                    }
-                    isDriveMode = false;
-                }
+//                if (activityType != DetectedActivity.STILL && activityType != DetectedActivity.UNKNOWN && activityType != DetectedActivity.TILTING){
+//                    isDriveMode = true;
+//                    mInputView.setKeyboard(mEmptyKeyBoard);
+//                    startService(new Intent(getApplicationContext(), FloatButtonService.class));
+//
+//                }
+//                else if (isDriveMode)
+//                {
+//                    stopService(new Intent(getApplicationContext(),FloatButtonService.class));
+//                    if (mInputView != null){
+//                        mInputView.setKeyboard(keyBoards[currentLanguage]);
+//                    }
+//                    isDriveMode = false;
+//                }
             }
 //        }
+    };
+
+    private BroadcastReceiver mOverrideReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getExtras().getBoolean(BouncingImageView.EXTRA,true)){
+                mInputView.setKeyboard(keyBoards[currentLanguage]);
+                Log.i("override","on");
+                isOverride = true;
+            }
+            else if (isDriveMode && !intent.getExtras().getBoolean(BouncingImageView.EXTRA,false)){
+                mInputView.setKeyboard(mEmptyKeyBoard);
+                Log.i("override","of");
+                isOverride = false;
+            }
+        }
     };
 
     @Override
@@ -805,7 +895,92 @@ public class SafeDriveKey extends InputMethodService
         if (mReceiver != null){
             unregisterReceiver(mReceiver);
         }
+        if (mOverrideReceiver != null){
+            unregisterReceiver(mOverrideReceiver);
+        }
     }
 
 
+    public void startActivityRecognition(){
+        int resp = GooglePlayServicesUtil.isGooglePlayServicesAvailable(getApplicationContext());
+        if(resp == ConnectionResult.SUCCESS){
+            buildGoogleApiClient(getApplicationContext());
+        }
+        else
+        {
+            Intent googleDialog = new Intent(getApplicationContext(),GooglePlayDialogShellActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putInt("errorCode",resp);
+            googleDialog.putExtras(bundle);
+            googleDialog.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getApplicationContext().startActivity(googleDialog);
+        }
+    }
+
+    public void stopActivityRecognition(){
+        if (mGoogleApiClient != null){
+            if (BuildConfig.DEBUG){
+                Log.i(TAG,"Stop activity recognition updates");
+            }
+            ActivityRecognition.ActivityRecognitionApi.removeActivityUpdates(mGoogleApiClient,pIntent);
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,pIntent);
+            mGoogleApiClient.disconnect();
+            stopService(new Intent(getApplicationContext(),FloatButtonService.class));
+        }
+        isOverride = false;
+    }
+
+    public boolean isGoogleClientConnected(){
+        if (mGoogleApiClient != null){
+            return mGoogleApiClient.isConnected();
+        }
+        return false;
+    }
+    private synchronized  void buildGoogleApiClient(Context context) {
+
+        mGoogleApiClient = new GoogleApiClient.Builder(context)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(ActivityRecognition.API)
+                .addApi(LocationServices.API)
+                .build();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        if (BuildConfig.DEBUG){
+            Toast.makeText(getApplicationContext(), "google client connected", Toast.LENGTH_SHORT).show();
+        }
+        Intent intent = new Intent(getApplicationContext(), ActivityRecognitionService.class);
+        pIntent = PendingIntent.getService(getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mGoogleApiClient,500,pIntent);
+
+        LocationRequest locationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(UPDATE_INTERVAL_MS)
+                .setFastestInterval(FASTEST_INTERVAL_MS);
+        Intent locationIntent = new Intent(getApplicationContext(),ActivityRecognitionService.class);
+        lIntent = PendingIntent.getService(getApplicationContext(),1,locationIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,locationRequest, lIntent);
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        if (BuildConfig.DEBUG){
+            Toast.makeText(getApplicationContext(),"google connection suspended",Toast.LENGTH_SHORT).show();
+            Log.e(InputMethodChangeReceiver.class.getSimpleName(), "google client connection suspended reconnecting");
+        }
+        mGoogleApiClient.reconnect();
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        if (BuildConfig.DEBUG){
+            Toast.makeText(getApplicationContext(),"google client connection failed",Toast.LENGTH_SHORT).show();
+            Log.e(InputMethodChangeReceiver.class.getSimpleName(),"google client connection failed with code " + connectionResult.getErrorCode());
+        }
+        mGoogleApiClient.connect();
+    }
 }

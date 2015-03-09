@@ -36,12 +36,12 @@
     <string name="label_subtype_heb_IL">Hebrew</string>
 
     <!-- Titles for ImePreference -->
-    <string name="settings_name">Sample Soft Keyboard Settings</string>
+    <string name="settings_name">XSms Keyboard Settings</string>
     <string name="language_selection_title">Input languages</string>
     <string name="select_language">Select input languages</string>
     <string name="general_category">General</string>
-    <string name="app_name">SafeKey Drive</string>
-    <string name="safeDriveKeyLabel">Safe Drive Key</string>
+    <string name="app_name">XSms</string>
+    <string name="safeDriveKeyLabel">XMS – Safety Drive Key</string>
     <string name="lable_done">Done</string>
 
     <string-array name="supported_languages">
@@ -50,7 +50,7 @@
         <item name="3">iw</item>
     </string-array>
 
-    <string name="title_activity_pref">Pref</string>
+    <string name="title_activity_google_play_dialog_shell">GooglePlayDialogShellActivity</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 

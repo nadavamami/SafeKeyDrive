@@ -6,10 +6,9 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.IBinder;
 import android.view.Gravity;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageView;
+
+import com.na.safekeydrive.R;
 
 /**
  * Created by Arthur on 2/20/2015.
@@ -30,7 +29,7 @@ public class FloatButtonService extends Service {
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         chatHead = new BouncingImageView(this);
-        chatHead.setImageResource(android.R.drawable.sym_def_app_icon);
+        chatHead.setImageResource(R.drawable.ic_override);
 
         Point size = new Point();
         windowManager.getDefaultDisplay().getSize(size);
