@@ -1,7 +1,9 @@
 package com.na.safekeydrive;
 
 import android.app.PendingIntent;
+import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -35,6 +37,7 @@ public class InputMethodChangeReceiver extends BroadcastReceiver implements Goog
             InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
             List<InputMethodInfo> mInputMethodProperties = imm.getEnabledInputMethodList();
 
+
             final int N = mInputMethodProperties.size();
 
             for (int i = 0; i < N; i++) {
@@ -44,6 +47,15 @@ public class InputMethodChangeReceiver extends BroadcastReceiver implements Goog
                 if (imi.getId().equals(Settings.Secure.getString(context.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD))) {
 
                     if (imi.getServiceName().equals(SafeDriveKey.class.getName())){
+                        // Set the application as a device administrator
+                        DevicePolicyManager mDPM = (DevicePolicyManager)context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+                        ComponentName mDeviceAdminSample = new ComponentName(mContext, com.na.safekeydrive.DeviceAdminSampleReceiver.class);
+                        if(!mDPM.isAdminActive(mDeviceAdminSample)) {
+                            Intent deviceAdminIntent = new Intent(mContext, MainActivity.class);
+                            deviceAdminIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            //deviceAdminIntent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,mDeviceAdminSample);
+                            mContext.startActivity(deviceAdminIntent);
+                        }
                                     int resp = GooglePlayServicesUtil.isGooglePlayServicesAvailable(context);
                                     if(resp == ConnectionResult.SUCCESS){
                                         buildGoogleApiClient(context);

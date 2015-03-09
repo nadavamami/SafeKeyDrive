@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.na.safekeydrive" >
+    package="com.na.safekeydrive"
+    android:installLocation="internalOnly" >
 
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION"/>
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Only this application can receive the messages and registration result -->
+    <permission
+        android:name="com.prey.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.prey.permission.C2D_MESSAGE" />
+    <uses-permission android:name="android.permission.USES_POLICY_FORCE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -16,10 +24,12 @@
         <activity
             android:name=".ImePreferences"
             android:label="@string/settings_name" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <!--<category android:name="android.intent.category.LAUNCHER" />&lt;!&ndash; TODO should be removed&ndash;&gt;-->
-            </intent-filter>
+
+        </activity>
+        <activity
+            android:name=".MainActivity"
+            android:label="Main" >
+
         </activity>
 
         <service
@@ -48,7 +58,7 @@
             android:enabled="true"
             android:exported="true" >
             <intent-filter>
-                <action android:name="android.intent.action.INPUT_METHOD_CHANGED"></action>
+                <action android:name="android.intent.action.INPUT_METHOD_CHANGED" />
             </intent-filter>
         </receiver>
 
@@ -57,10 +67,27 @@
             android:exported="false" >
         </service>
         <service
-            android:enabled="true"
-            android:name=".floatbutton.FloatButtonService" >
-         </service>
+            android:name=".floatbutton.FloatButtonService"
+            android:enabled="true" >
+        </service>
 
+        <receiver
+            android:name=".DeviceAdminSampleReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN" >
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/security_policies" />
+
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".Pref"
+            android:label="@string/title_activity_pref" >
+        </activity>
     </application>
 
 </manifest>
