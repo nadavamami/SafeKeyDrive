@@ -1,5 +1,6 @@
 package com.na.safekeydrive.floatbutton;
 
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.CountDownTimer;
@@ -10,6 +11,9 @@ import android.view.View;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+
+import com.na.safekeydrive.R;
 
 /**
  * Created by Arthur on 2/24/2015.
@@ -25,6 +29,7 @@ public class BouncingImageView extends ImageView {
     private boolean isClicked = false;
     public static final String OVERRIDE = "com.na.safekeydrive.floatbutton.BouncingImageView";
     public static final String EXTRA = "Status";
+    ProgressBar progressBar;
 
 
     public BouncingImageView(Context context, AttributeSet attrs, int defStyle) {
@@ -177,17 +182,34 @@ public class BouncingImageView extends ImageView {
                             initialTouchY = event.getRawY();
                             //getHandler().removeCallbacks(mRunnable);
                             that.setVisibility(View.GONE);
-                            invalidate();
+//                            that.setBackgroundResource(R.drawable.ic_3);
+                            progressBar = new ProgressBar(getContext());
+                            progressBar.setIndeterminate(true);
+                            progressBar.setBackgroundResource(R.drawable.ic_3);
 //                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
 //
-//                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
+                            ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(progressBar, params);
+                            invalidate();
+
 //                            windowManager.updateViewLayout(that, params);
 //                            MyCountDownTimer countDownTimer = MyCountDownTimer.get_mInstance();
 //                            countDownTimer.cancel();
-                            new CountDownTimer(3000,1000) {
+                            new CountDownTimer(4000,1000) {
+                                int count = 0;
                                 @Override
                                 public void onTick(long millisUntilFinished) {
-
+                                    switch (count){
+                                        case 0:
+                                            progressBar.setBackgroundResource(R.drawable.ic_3);
+                                            break;
+                                        case 1:
+                                            progressBar.setBackgroundResource(R.drawable.ic_2);
+                                            break;
+                                        case 2:
+                                            progressBar.setBackgroundResource(R.drawable.ic_1);
+                                    }
+                                    invalidate();
+                                    count++;
                                 }
 
                                 @Override
@@ -195,7 +217,7 @@ public class BouncingImageView extends ImageView {
                                     that.setVisibility(VISIBLE);
                                     setClicked(false);
 //                                    that.setVisibility(View.VISIBLE);
-//                                    ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(that);
+                                    ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(progressBar);
 //
 //                                    ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(that, params);
 //
@@ -257,7 +279,11 @@ public class BouncingImageView extends ImageView {
     }
 
     private void startOverrideTimer(){
+//        progressBar = new ProgressBar(getContext());
+//        progressBar.setIndeterminate(true);
+//        ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).addView(progressBar, params);
         new CountDownTimer(2000, 1000) {
+
             @Override
             public void onTick(long millisUntilFinished) {
                 if (getClicked()){
@@ -267,6 +293,7 @@ public class BouncingImageView extends ImageView {
 
             @Override
             public void onFinish() {
+//                ((WindowManager) getContext().getSystemService(Service.WINDOW_SERVICE)).removeView(progressBar);
                 if (!getClicked()){
                     Log.i("override timer","time is up");
                     Intent intent = new Intent();
